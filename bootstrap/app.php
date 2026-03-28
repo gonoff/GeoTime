@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('api', \App\Http\Middleware\ResolveTenant::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\EnsureSubscriptionActive::class);
         $middleware->appendToGroup('api', \App\Http\Middleware\EnsureSubscriptionActive::class);
+        $middleware->validateCsrfTokens(except: ['stripe/webhook']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
