@@ -71,9 +71,24 @@
           <h1 class="page-title"><slot name="title">Dashboard</slot></h1>
         </div>
         <div class="topbar-right">
-          <div class="user-menu" @click="showUserMenu = !showUserMenu">
-            <div class="user-avatar">{{ userInitial }}</div>
-            <span class="user-name">{{ user?.name ?? 'User' }}</span>
+          <div class="user-menu-wrapper">
+            <div class="user-menu" @click="showUserMenu = !showUserMenu">
+              <div class="user-avatar">{{ userInitial }}</div>
+              <span class="user-name">{{ user?.name ?? 'User' }}</span>
+              <ChevronDown :size="14" :stroke-width="2" class="user-chevron" />
+            </div>
+            <div v-if="showUserMenu" class="user-dropdown">
+              <div class="dropdown-header">
+                <span class="dropdown-name">{{ user?.name }}</span>
+                <span class="dropdown-email">{{ user?.email }}</span>
+              </div>
+              <div class="dropdown-divider" />
+              <button class="dropdown-item" @click="logout">
+                <LogOut :size="14" :stroke-width="2" />
+                <span>Sign out</span>
+              </button>
+            </div>
+            <div v-if="showUserMenu" class="dropdown-overlay" @click="showUserMenu = false" />
           </div>
         </div>
       </header>
@@ -102,6 +117,8 @@ import {
   Settings,
   CreditCard,
   Shield,
+  ChevronDown,
+  LogOut,
 } from 'lucide-vue-next';
 
 const page = usePage();
@@ -139,6 +156,10 @@ function isActive(href) {
 
 function navigate(href) {
   router.visit(href);
+}
+
+function logout() {
+  router.post('/logout');
 }
 </script>
 
@@ -331,6 +352,10 @@ function navigate(href) {
   gap: var(--sp-3);
 }
 
+.user-menu-wrapper {
+  position: relative;
+}
+
 .user-menu {
   display: flex;
   align-items: center;
@@ -362,6 +387,72 @@ function navigate(href) {
   font-size: 13px;
   color: var(--chalk-2);
   font-weight: 500;
+}
+
+.user-chevron {
+  color: var(--chalk-3);
+}
+
+/* Dropdown */
+.dropdown-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 49;
+}
+
+.user-dropdown {
+  position: absolute;
+  top: calc(100% + var(--sp-2));
+  right: 0;
+  width: 220px;
+  background: var(--slab-3);
+  border: 1px solid var(--seam-2);
+  border-radius: var(--radius-lg);
+  z-index: 50;
+  overflow: hidden;
+}
+
+.dropdown-header {
+  padding: var(--sp-3) var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dropdown-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--chalk-1);
+}
+
+.dropdown-email {
+  font-size: 11px;
+  color: var(--chalk-3);
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--seam-1);
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  padding: var(--sp-3) var(--sp-4);
+  background: none;
+  border: none;
+  color: var(--chalk-2);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--duration) var(--ease);
+}
+
+.dropdown-item:hover {
+  background: var(--seam-1);
+  color: var(--chalk-1);
 }
 
 /* Content */
