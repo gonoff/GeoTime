@@ -6,6 +6,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\TransferController;
 use App\Http\Controllers\JobController;
+use App\Http\Controllers\GeofenceController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/stripe/webhook', [\App\Http\Controllers\Billing\WebhookController::class, 'handleWebhook']);
@@ -33,6 +34,9 @@ Route::prefix('v1')->group(function () {
 
         // Jobs / Job Sites
         Route::apiResource('jobs', JobController::class);
+
+        // Geofences
+        Route::apiResource('geofences', GeofenceController::class);
 
         // Billing
         Route::prefix('billing')->group(function () {
