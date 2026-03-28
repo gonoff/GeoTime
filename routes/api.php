@@ -8,6 +8,7 @@ use App\Http\Controllers\TransferController;
 use App\Http\Controllers\JobController;
 use App\Http\Controllers\GeofenceController;
 use App\Http\Controllers\TimeEntryController;
+use App\Http\Controllers\BreakEntryController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/stripe/webhook', [\App\Http\Controllers\Billing\WebhookController::class, 'handleWebhook']);
@@ -46,6 +47,10 @@ Route::prefix('v1')->group(function () {
         Route::post('time-entries/{timeEntry}/clock-out', [TimeEntryController::class, 'clockOut']);
         Route::put('time-entries/{timeEntry}', [TimeEntryController::class, 'update']);
         Route::post('time-entries/{timeEntry}/verify', [TimeEntryController::class, 'verify']);
+
+        // Breaks
+        Route::post('breaks', [BreakEntryController::class, 'store']);
+        Route::post('breaks/{breakEntry}/end', [BreakEntryController::class, 'end']);
 
         // Billing
         Route::prefix('billing')->group(function () {
