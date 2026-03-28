@@ -1,13 +1,17 @@
 <?php
 
+use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
-
 Route::prefix('v1')->group(function () {
+    // Public auth routes
     Route::post('/auth/register', RegisterController::class);
+    Route::post('/auth/login', [LoginController::class, 'login']);
+
+    // Authenticated routes
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/auth/me', [LoginController::class, 'me']);
+        Route::post('/auth/logout', [LoginController::class, 'logout']);
+    });
 });
