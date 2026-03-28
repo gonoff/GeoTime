@@ -5,3 +5,4 @@ node_modules/
 /.phpunit.cache
 /storage/*.key
 database/database.sqlite
+.phpunit.result.cache
