@@ -14,6 +14,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->appendToGroup('web', \App\Http\Middleware\ResolveTenant::class);
         $middleware->appendToGroup('api', \App\Http\Middleware\ResolveTenant::class);
+        $middleware->appendToGroup('web', \App\Http\Middleware\EnsureSubscriptionActive::class);
+        $middleware->appendToGroup('api', \App\Http\Middleware\EnsureSubscriptionActive::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
