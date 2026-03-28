@@ -3240,6 +3240,8 @@ use App\Models\Tenant;
 use App\Models\TimeEntry;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class TimeEntryTest extends TestCase
@@ -3472,6 +3474,44 @@ class TimeEntryTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonCount(1, 'data');
     }
+
+    public function test_can_verify_time_entry_with_selfie(): void
+    {
+        // Create tenant with AUTO_PHOTO mode
+        [$tenant, $admin, $team, $employee, $job] = $this->createSetup();
+        $tenant->update(['clock_verification_mode' => 'AUTO_PHOTO']);
+
+        // Create employee and time entry with UNVERIFIED status
+        $entry = TimeEntry::create([
+            'tenant_id' => $tenant->id,
+            'employee_id' => $employee->id,
+            'job_id' => $job->id,
+            'team_id' => $team->id,
+            'clock_in' => now()->subHour(),
+            'clock_in_lat' => 39.78,
+            'clock_in_lng' => -89.65,
+            'clock_method' => 'GEOFENCE',
+            'status' => 'ACTIVE',
+            'sync_status' => 'SYNCED',
+            'verification_status' => 'UNVERIFIED',
+        ]);
+
+        // POST selfie to verify endpoint
+        Storage::fake('s3');
+        $selfie = UploadedFile::fake()->image('selfie.jpg', 640, 480);
+
+        $response = $this->actingAs($admin, 'sanctum')
+            ->postJson("/api/v1/time-entries/{$entry->id}/verify", [
+                'selfie' => $selfie,
+            ]);
+
+        $response->assertStatus(200);
+
+        // Assert verification_status is now VERIFIED
+        $entry->refresh();
+        $this->assertEquals('VERIFIED', $entry->verification_status);
+        $this->assertNotNull($entry->selfie_url);
+    }
 }
 ```
 
@@ -3517,6 +3557,7 @@ return new class extends Migration
             $table->string('sync_status', 20)->default('SYNCED'); // PENDING, SYNCED, CONFLICT
             $table->string('device_id', 255)->nullable();
             $table->text('selfie_url')->nullable();
+            $table->string('verification_status', 20)->default('NOT_REQUIRED'); // VERIFIED, UNVERIFIED, NOT_REQUIRED
             $table->text('notes')->nullable();
             $table->timestamps();
 
@@ -3574,6 +3615,7 @@ class TimeEntry extends Model
         'sync_status',
         'device_id',
         'selfie_url',
+        'verification_status',
         'notes',
     ];
 
@@ -3799,6 +3841,8 @@ class TimeEntryController extends Controller
             ], 422);
         }
 
+        $tenant = Tenant::find($employee->tenant_id);
+
         $entry = TimeEntry::create([
             'employee_id' => $employee->id,
             'job_id' => $request->job_id,
@@ -3811,6 +3855,7 @@ class TimeEntryController extends Controller
             'notes' => $request->notes,
             'status' => 'ACTIVE',
             'sync_status' => 'SYNCED',
+            'verification_status' => $tenant->clock_verification_mode === 'AUTO_PHOTO' ? 'UNVERIFIED' : 'NOT_REQUIRED',
         ]);
 
         return (new TimeEntryResource($entry))
@@ -3870,6 +3915,25 @@ class TimeEntryController extends Controller
 
         return new TimeEntryResource($timeEntry->fresh());
     }
+
+    public function verify(Request $request, TimeEntry $timeEntry): JsonResponse
+    {
+        $request->validate([
+            'selfie' => ['required', 'image', 'max:5120'], // 5MB max
+        ]);
+
+        $path = $request->file('selfie')->store(
+            "tenants/{$timeEntry->tenant_id}/selfies",
+            's3'
+        );
+
+        $timeEntry->update([
+            'selfie_url' => $path,
+            'verification_status' => 'VERIFIED',
+        ]);
+
+        return response()->json(['data' => $timeEntry->fresh()]);
+    }
 }
 ```
 
@@ -3885,6 +3949,7 @@ Route::get('time-entries/{timeEntry}', [TimeEntryController::class, 'show']);
 Route::post('time-entries/clock-in', [TimeEntryController::class, 'clockIn']);
 Route::post('time-entries/{timeEntry}/clock-out', [TimeEntryController::class, 'clockOut']);
 Route::put('time-entries/{timeEntry}', [TimeEntryController::class, 'update']);
+Route::post('time-entries/{timeEntry}/verify', [TimeEntryController::class, 'verify']);
 ```
 
 - [ ] **Step 10: Run migration and tests**

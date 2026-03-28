@@ -60,6 +60,7 @@ The existing `companies` table from the PRD becomes the `tenants` table. It reta
 - `trial_ends_at` — trial expiration timestamp (subscription details live in Cashier's `subscriptions` table)
 - `plan` — `starter` or `business`
 - `status` — `active`, `trial`, `past_due`, `cancelled`, `suspended`
+- `clock_verification_mode` — `AUTO_ONLY` (default) or `AUTO_PHOTO`. Controls whether employees must submit a selfie to verify clock events.
 
 ### 3.4 Platform Super Admin
 
@@ -243,6 +244,7 @@ The core schema from the PRD remains structurally the same. Key changes:
 4. New `entry_conflicts` table for sync conflict tracking (employee_id, device_entry, server_entry, resolution status)
 5. New `subscriptions` table (managed by Laravel Cashier)
 6. New `subscription_items` table (managed by Laravel Cashier)
+7. `time_entries` table gains `verification_status` column (`VERIFIED`, `UNVERIFIED`, `NOT_REQUIRED`) to track selfie confirmation status
 
 ---
 
@@ -250,7 +252,7 @@ The core schema from the PRD remains structurally the same. Key changes:
 
 All business logic and product features remain as specified in the PRD:
 
-- Geofence engine (auto clock-in/out, offline-first, anti-fraud)
+- Geofence engine (auto clock-in/out, offline-first, anti-fraud, configurable photo verification mode)
 - Team management with transfer workflow and categorized reasons
 - Job/job site management with multi-geofence support
 - Time tracking (breaks, overtime, rounding, timesheets, PTO)

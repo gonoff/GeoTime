@@ -1670,6 +1670,8 @@ export const schema = appSchema({
         { name: 'status', type: 'string' }, // ACTIVE, SUBMITTED, APPROVED, REJECTED, PAYROLL_PROCESSED
         { name: 'sync_status', type: 'string' }, // pending, synced, conflict
         { name: 'notes', type: 'string', isOptional: true },
+        { name: 'verification_status', type: 'string' }, // NOT_REQUIRED, UNVERIFIED, VERIFIED
+        { name: 'selfie_local_uri', type: 'string', isOptional: true },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
       ],
@@ -1795,6 +1797,8 @@ export default class TimeEntry extends Model {
   @text('status') status!: string;
   @text('sync_status') syncStatus!: string;
   @text('notes') notes!: string | null;
+  @text('verification_status') verificationStatus!: string; // NOT_REQUIRED, UNVERIFIED, VERIFIED
+  @text('selfie_local_uri') selfieLocalUri!: string | null;
   @readonly @date('created_at') createdAt!: Date;
   @readonly @date('updated_at') updatedAt!: Date;
 
@@ -2063,9 +2067,11 @@ import BackgroundGeolocation, {
   GeofenceEvent,
   GeofencesChangeEvent,
 } from 'react-native-background-geolocation';
+import { Vibration } from 'react-native';
 import { database, timeEntriesCollection, geofencesCollection } from '@/database';
 import { useAuthStore } from '@/store/authStore';
 import { Q } from '@nozbe/watermelondb';
+import { notificationService } from './notifications';
 
 const GEOLOCATION_CONFIG: Config = {
   // Activity Recognition
@@ -2223,6 +2229,10 @@ class GeofenceService {
       return;
     }
 
+    // Check tenant's clock verification mode from auth store
+    const user = useAuthStore.getState().user;
+    const requiresPhoto = user?.tenant?.clock_verification_mode === 'AUTO_PHOTO';
+
     await database.write(async () => {
       await timeEntriesCollection.create((entry) => {
         entry.employeeId = employeeId;
@@ -2233,10 +2243,20 @@ class GeofenceService {
         entry.clockMethod = 'GEOFENCE';
         entry.status = 'ACTIVE';
         entry.syncStatus = 'pending';
+        entry.verificationStatus = requiresPhoto ? 'UNVERIFIED' : 'NOT_REQUIRED';
       });
     });
 
     console.log('[Geofence] Auto clock-in created.');
+
+    // If tenant requires photo verification, alert the user
+    if (requiresPhoto) {
+      Vibration.vibrate([500, 200, 500]);
+      await notificationService.showLocalNotification(
+        'Verification Required',
+        'Clock-in recorded. Please open GeoTime and take a verification photo.',
+      );
+    }
   }
 
   /**
@@ -3071,11 +3091,13 @@ const styles = StyleSheet.create({
 ```tsx
 // mobile/src/screens/clock/ClockScreen.tsx
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { ClockButton } from '@/components/ClockButton';
 import { StatusCard } from '@/components/StatusCard';
 import { useClock } from '@/hooks/useClock';
 import { formatTime, formatDuration } from '@/utils/time';
+import { database } from '@/database';
 
 export function ClockScreen() {
   const {
@@ -3129,6 +3151,40 @@ export function ClockScreen() {
     }
   };
 
+  const needsVerification =
+    isClockedIn &&
+    activeEntry &&
+    activeEntry.verificationStatus === 'UNVERIFIED';
+
+  const handleTakeVerificationPhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Camera access is needed to take a verification photo.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      cameraType: ImagePicker.CameraType.front,
+      quality: 0.7,
+      allowsEditing: false,
+    });
+
+    if (result.canceled || !result.assets?.[0]) return;
+
+    const selfieUri = result.assets[0].uri;
+
+    // Update the active entry with the selfie URI and mark as VERIFIED
+    await database.write(async () => {
+      await activeEntry!.update((e) => {
+        e.selfieLocalUri = selfieUri;
+        e.verificationStatus = 'VERIFIED';
+        e.syncStatus = 'pending'; // Mark for re-sync so selfie gets uploaded
+      });
+    });
+
+    Alert.alert('Verified', 'Your verification photo has been saved.');
+  };
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Status indicator */}
@@ -3151,6 +3207,16 @@ export function ClockScreen() {
           <Text style={styles.breakWarning}>End your break before clocking out</Text>
         )}
       </View>
+
+      {/* Verification photo button */}
+      {needsVerification && (
+        <TouchableOpacity
+          style={styles.verificationButton}
+          onPress={handleTakeVerificationPhoto}
+        >
+          <Text style={styles.verificationButtonText}>Take Verification Photo</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Info cards */}
       <View style={styles.cards}>
@@ -3239,6 +3305,19 @@ const styles = StyleSheet.create({
     color: '#f59e0b',
     fontSize: 13,
     fontWeight: '500',
+  },
+  verificationButton: {
+    backgroundColor: '#f59e0b',
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 12,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  verificationButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
   },
   cards: {
     width: '100%',
@@ -3363,6 +3442,7 @@ export async function checkConnectivity(): Promise<boolean> {
 ```ts
 // mobile/src/services/sync.ts
 import { Q } from '@nozbe/watermelondb';
+import * as FileSystem from 'expo-file-system';
 import {
   database,
   timeEntriesCollection,
@@ -3474,10 +3554,13 @@ class SyncManager {
         await this.upsertJobs(syncData.jobs);
       });
 
-      // 5. Update last synced timestamp
+      // 5. Upload selfies for verified time entries that have a local photo
+      await this.uploadPendingSelfies(pendingEntries, syncData.confirmed_entries);
+
+      // 6. Update last synced timestamp
       await SecureStore.setItemAsync(LAST_SYNCED_KEY, syncData.server_time);
 
-      // 6. Re-register geofences with the OS if any were updated
+      // 7. Re-register geofences with the OS if any were updated
       if (syncData.geofences.length > 0) {
         await geofenceService.registerGeofences();
       }
@@ -3495,6 +3578,51 @@ class SyncManager {
       console.error('[Sync] Failed:', err.message);
       this.isSyncing = false;
       return false;
+    }
+  }
+
+  /**
+   * Upload selfie photos for verified time entries after they have been synced.
+   * Sends the selfie to `/api/v1/time-entries/{id}/verify` and clears the local URI on success.
+   */
+  private async uploadPendingSelfies(
+    pendingEntries: any[],
+    confirmedIds: string[],
+  ): Promise<void> {
+    for (const entry of pendingEntries) {
+      const isConfirmed = confirmedIds.includes(entry.id) || confirmedIds.includes(entry.serverId);
+      if (!isConfirmed || !entry.selfieLocalUri || entry.verificationStatus !== 'VERIFIED') {
+        continue;
+      }
+
+      try {
+        const serverId = entry.serverId ?? entry.id;
+        const fileInfo = await FileSystem.getInfoAsync(entry.selfieLocalUri);
+        if (!fileInfo.exists) continue;
+
+        const formData = new FormData();
+        formData.append('selfie', {
+          uri: entry.selfieLocalUri,
+          name: `selfie_${serverId}.jpg`,
+          type: 'image/jpeg',
+        } as any);
+
+        await apiClient.post(`/api/v1/time-entries/${serverId}/verify`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+
+        // Clear local URI after successful upload
+        await database.write(async () => {
+          await entry.update((e: any) => {
+            e.selfieLocalUri = null;
+          });
+        });
+
+        console.log(`[Sync] Selfie uploaded for entry ${serverId}.`);
+      } catch (err: any) {
+        // Non-fatal — will retry on next sync cycle
+        console.warn(`[Sync] Failed to upload selfie for entry ${entry.id}:`, err.message);
+      }
     }
   }
 

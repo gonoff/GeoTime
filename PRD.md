@@ -84,7 +84,7 @@ Small to mid-size businesses with field teams, multiple job sites, or hourly emp
 | Admin Dashboard | Next.js 14 (App Router) | SSR, file-based routing, React Server Components |
 | QuickBooks Integration | Intuit QBO API (OAuth 2.0) + Codat/Rutter for Bank Feeds | Direct API for invoices/estimates; middleware required for bank feeds |
 | Push Notifications | Firebase Cloud Messaging (FCM) | Cross-platform, free tier |
-| File Storage | Supabase Storage | Selfie photos for anti-fraud verification |
+| File Storage | Supabase Storage | Selfie photos for clock verification, exports, attachments |
 
 ---
 
@@ -105,6 +105,21 @@ Small to mid-size businesses with field teams, multiple job sites, or hourly emp
 - Works without internet — GPS is satellite-based, no data connection required
 - Runs as a background service at the OS level (survives app kill)
 
+#### 5.1.2.1 Clock Verification Modes
+
+Business owners can configure one of two verification modes at the tenant level:
+
+| Mode | Behavior |
+|------|----------|
+| **Auto-Only** (default) | Geofence entry/exit triggers clock-in/out automatically. No additional confirmation required. |
+| **Auto + Photo** | Geofence entry/exit triggers clock-in/out immediately, but the entry is flagged as `unverified`. The employee's phone vibrates and displays a push notification prompting them to open the app and take a selfie. Once submitted, the entry is marked `verified`. If no photo is submitted, the entry remains `unverified` for admin review. |
+
+**Business Rules:**
+- Mode is configured per tenant (all employees in the company use the same mode)
+- Unverified entries are valid time records — they are not held or delayed
+- Admins can view and filter unverified entries in the timesheet approval workflow
+- Photos are stored in S3-compatible storage (DigitalOcean Spaces) with a retention policy matching time entry retention
+
 #### 5.1.3 Offline-First Sync
 - All time entries stored locally in WatermelonDB with sync status flag (`pending`, `synced`, `conflict`)
 - When internet becomes available, pending entries push to Supabase
@@ -113,7 +128,7 @@ Small to mid-size businesses with field teams, multiple job sites, or hourly emp
 
 #### 5.1.4 Anti-Fraud Measures
 - GPS coordinates captured at every clock event (stored as evidence)
-- Optional: selfie photo capture at clock-in (facial recognition V2)
+- Selfie photo capture at clock-in/out (configurable per tenant via Auto + Photo mode). Photos stored as evidence alongside GPS coordinates. Facial recognition deferred to V2.
 - Device binding: one primary device per employee (configurable by admin)
 - Anomaly detection: flag if clock-in location is outside geofence (edge cases with GPS drift)
 - Admin audit log of all manual time edits
@@ -480,6 +495,7 @@ companies ──┬── teams ──┬── employees
 | rounding_rule | ENUM | `EXACT`, `NEAREST_5`, `NEAREST_6`, `NEAREST_15` |
 | qbo_realm_id | VARCHAR(50) | QuickBooks company ID |
 | qbo_refresh_token | TEXT | Encrypted |
+| clock_verification_mode | ENUM | `AUTO_ONLY`, `AUTO_PHOTO`. Default: `AUTO_ONLY` |
 
 **teams**
 | Column | Type | Notes |
@@ -558,6 +574,7 @@ companies ──┬── teams ──┬── employees
 | status | ENUM | `ACTIVE`, `SUBMITTED`, `APPROVED`, `REJECTED`, `PAYROLL_PROCESSED` |
 | sync_status | ENUM | `PENDING`, `SYNCED`, `CONFLICT` |
 | device_id | VARCHAR(255) | Device used for this entry |
+| verification_status | ENUM | `VERIFIED`, `UNVERIFIED`, `NOT_REQUIRED`. Default: `NOT_REQUIRED` |
 | selfie_url | TEXT | Anti-fraud photo path |
 | notes | TEXT | |
 

@@ -466,6 +466,7 @@ return new class extends Migration
             $table->tinyInteger('workweek_start_day')->default(1); // 0=Sun, 1=Mon
             $table->jsonb('overtime_rule')->default('{"weekly_threshold": 40, "daily_threshold": null, "multiplier": 1.5}');
             $table->string('rounding_rule', 20)->default('EXACT'); // EXACT, NEAREST_5, NEAREST_6, NEAREST_15
+            $table->string('clock_verification_mode', 20)->default('AUTO_ONLY'); // AUTO_ONLY, AUTO_PHOTO
             $table->string('plan', 20)->default('starter'); // starter, business
             $table->string('status', 20)->default('trial'); // trial, active, past_due, cancelled, suspended
             $table->string('stripe_id')->nullable()->index();
@@ -505,6 +506,7 @@ class Tenant extends Model
         'workweek_start_day',
         'overtime_rule',
         'rounding_rule',
+        'clock_verification_mode',
         'plan',
         'status',
         'trial_ends_at',
