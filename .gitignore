@@ -6,3 +6,5 @@ node_modules/
 /storage/*.key
 database/database.sqlite
 .phpunit.result.cache
+/public/build/
+/public/hot
