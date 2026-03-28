@@ -7,6 +7,7 @@ use App\Http\Controllers\TeamController;
 use App\Http\Controllers\TransferController;
 use App\Http\Controllers\JobController;
 use App\Http\Controllers\GeofenceController;
+use App\Http\Controllers\TimeEntryController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/stripe/webhook', [\App\Http\Controllers\Billing\WebhookController::class, 'handleWebhook']);
@@ -37,6 +38,14 @@ Route::prefix('v1')->group(function () {
 
         // Geofences
         Route::apiResource('geofences', GeofenceController::class);
+
+        // Time Entries
+        Route::get('time-entries', [TimeEntryController::class, 'index']);
+        Route::get('time-entries/{timeEntry}', [TimeEntryController::class, 'show']);
+        Route::post('time-entries/clock-in', [TimeEntryController::class, 'clockIn']);
+        Route::post('time-entries/{timeEntry}/clock-out', [TimeEntryController::class, 'clockOut']);
+        Route::put('time-entries/{timeEntry}', [TimeEntryController::class, 'update']);
+        Route::post('time-entries/{timeEntry}/verify', [TimeEntryController::class, 'verify']);
 
         // Billing
         Route::prefix('billing')->group(function () {
