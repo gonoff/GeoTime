@@ -20,6 +20,7 @@ class User extends Authenticatable
         'password',
         'tenant_id',
         'role',
+        'is_platform_admin',
     ];
 
     protected $hidden = [
@@ -37,6 +38,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_platform_admin' => 'boolean',
         ];
     }
 

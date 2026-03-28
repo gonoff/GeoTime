@@ -10,6 +10,11 @@ class EnsureSubscriptionActive
 {
     public function handle(Request $request, Closure $next): Response
     {
+        // Skip subscription checks for platform admin routes
+        if ($request->is('admin/*')) {
+            return $next($request);
+        }
+
         $tenant = app()->bound('current_tenant') ? app('current_tenant') : null;
 
         if (! $tenant) {

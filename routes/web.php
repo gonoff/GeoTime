@@ -1,7 +1,11 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminLoginController;
+use App\Http\Controllers\Admin\TenantManagementController;
 use App\Http\Controllers\Auth\WebLoginController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Middleware\EnsurePlatformAdmin;
 use App\Http\Controllers\Web\BillingPageController;
 use App\Http\Controllers\Web\GeofencePageController;
 use App\Http\Controllers\Web\JobPageController;
@@ -42,4 +46,21 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/employees/{employee}', [EmployeePageController::class, 'show'])->name('employees.show');
 
     Route::get('/teams', [TeamPageController::class, 'index'])->name('teams.index');
+});
+
+// Platform Admin
+Route::prefix('admin')->group(function () {
+    Route::middleware('guest')->group(function () {
+        Route::get('/login', [AdminLoginController::class, 'show'])->name('admin.login');
+        Route::post('/login', [AdminLoginController::class, 'store']);
+    });
+
+    Route::middleware(['auth', EnsurePlatformAdmin::class])->group(function () {
+        Route::get('/dashboard', AdminDashboardController::class)->name('admin.dashboard');
+        Route::get('/tenants', [TenantManagementController::class, 'index'])->name('admin.tenants.index');
+        Route::get('/tenants/{tenant}', [TenantManagementController::class, 'show'])->name('admin.tenants.show');
+        Route::post('/tenants/{tenant}/suspend', [TenantManagementController::class, 'suspend'])->name('admin.tenants.suspend');
+        Route::post('/tenants/{tenant}/activate', [TenantManagementController::class, 'activate'])->name('admin.tenants.activate');
+        Route::post('/logout', [AdminLoginController::class, 'destroy'])->name('admin.logout');
+    });
 });
