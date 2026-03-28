@@ -11,6 +11,7 @@ use App\Http\Controllers\TimeEntryController;
 use App\Http\Controllers\BreakEntryController;
 use App\Http\Controllers\TimesheetController;
 use App\Http\Controllers\PtoController;
+use App\Http\Controllers\SyncController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/stripe/webhook', [\App\Http\Controllers\Billing\WebhookController::class, 'handleWebhook']);
@@ -90,6 +91,10 @@ Route::prefix('v1')->group(function () {
                 ],
             ]);
         });
+
+        // Mobile Sync
+        Route::get('sync', [SyncController::class, 'pull']);
+        Route::post('sync', [SyncController::class, 'push']);
 
         // Billing
         Route::prefix('billing')->group(function () {
