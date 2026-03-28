@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\EmployeeController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/stripe/webhook', [\App\Http\Controllers\Billing\WebhookController::class, 'handleWebhook']);
@@ -15,6 +16,9 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/auth/me', [LoginController::class, 'me']);
         Route::post('/auth/logout', [LoginController::class, 'logout']);
+
+        // Employees
+        Route::apiResource('employees', EmployeeController::class);
 
         // Billing
         Route::prefix('billing')->group(function () {
