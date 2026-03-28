@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Laravel\Cashier\Billable;
 
 class Tenant extends Model
 {
-    use HasUuids;
+    use HasUuids, Billable;
 
     protected $attributes = [
         'overtime_rule' => '{"weekly_threshold": 40, "daily_threshold": null, "multiplier": 1.5}',

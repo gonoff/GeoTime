@@ -13,5 +13,11 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/auth/me', [LoginController::class, 'me']);
         Route::post('/auth/logout', [LoginController::class, 'logout']);
+
+        // Billing
+        Route::prefix('billing')->group(function () {
+            Route::get('/status', [\App\Http\Controllers\Billing\SubscriptionController::class, 'status']);
+            Route::post('/checkout', [\App\Http\Controllers\Billing\SubscriptionController::class, 'createCheckoutSession']);
+        });
     });
 });
