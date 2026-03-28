@@ -10,6 +10,7 @@ use App\Http\Controllers\GeofenceController;
 use App\Http\Controllers\TimeEntryController;
 use App\Http\Controllers\BreakEntryController;
 use App\Http\Controllers\TimesheetController;
+use App\Http\Controllers\PtoController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/stripe/webhook', [\App\Http\Controllers\Billing\WebhookController::class, 'handleWebhook']);
@@ -60,6 +61,12 @@ Route::prefix('v1')->group(function () {
             Route::post('/process-payroll', [TimesheetController::class, 'processPayroll']);
             Route::get('/summary', [TimesheetController::class, 'summary']);
         });
+
+        // PTO
+        Route::get('pto', [PtoController::class, 'index']);
+        Route::post('pto', [PtoController::class, 'store']);
+        Route::post('pto/{ptoRequest}/review', [PtoController::class, 'review']);
+        Route::get('pto/balance/{employeeId}', [PtoController::class, 'balance']);
 
         // Billing
         Route::prefix('billing')->group(function () {
