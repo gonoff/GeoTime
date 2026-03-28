@@ -1,1 +1,7 @@
+.env
+vendor/
+node_modules/
 .worktrees/
+/.phpunit.cache
+/storage/*.key
+database/database.sqlite
