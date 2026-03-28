@@ -68,6 +68,29 @@ Route::prefix('v1')->group(function () {
         Route::post('pto/{ptoRequest}/review', [PtoController::class, 'review']);
         Route::get('pto/balance/{employeeId}', [PtoController::class, 'balance']);
 
+        // Audit Logs
+        Route::get('audit-logs', function (\Illuminate\Http\Request $request) {
+            if (! $request->user()->isAdmin()) {
+                return response()->json(['message' => 'Forbidden'], 403);
+            }
+
+            $logs = \App\Models\AuditLog::query()
+                ->when($request->query('entity_type'), fn ($q, $type) => $q->where('entity_type', $type))
+                ->when($request->query('entity_id'), fn ($q, $id) => $q->where('entity_id', $id))
+                ->orderByDesc('created_at')
+                ->paginate($request->query('per_page', 50));
+
+            return response()->json([
+                'data' => $logs->items(),
+                'meta' => [
+                    'current_page' => $logs->currentPage(),
+                    'last_page' => $logs->lastPage(),
+                    'per_page' => $logs->perPage(),
+                    'total' => $logs->total(),
+                ],
+            ]);
+        });
+
         // Billing
         Route::prefix('billing')->group(function () {
             Route::get('/status', [\App\Http\Controllers\Billing\SubscriptionController::class, 'status']);
