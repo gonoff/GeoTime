@@ -1,14 +1,22 @@
 <?php
 
+use App\Http\Controllers\Auth\WebLoginController;
+use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect('/dashboard');
 });
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
-    })->name('dashboard');
+// Auth
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [WebLoginController::class, 'show'])->name('login');
+    Route::post('/login', [WebLoginController::class, 'store']);
+});
+
+Route::post('/logout', [WebLoginController::class, 'destroy'])->name('logout')->middleware('auth');
+
+// App
+Route::middleware(['auth'])->group(function () {
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
 });

@@ -1,11 +1,109 @@
 @import 'tailwindcss';
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @source '../**/*.blade.php';
 @source '../**/*.js';
+@source '../**/*.vue';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+    /* === GeoTime Design Tokens === */
+    /* Warm industrial palette — concrete, slate, safety orange */
+
+    /* Surfaces — warm gray scale, 2-3% lightness shifts per level */
+    --slab-0: #111110;        /* deepest — sidebar, overlays */
+    --slab-1: #1a1a18;        /* canvas — main background */
+    --slab-2: #222220;        /* raised — cards */
+    --slab-3: #2a2a27;        /* elevated — dropdowns, modals */
+    --slab-4: #33332f;        /* highest — hover states on elevated */
+
+    /* Foreground — text hierarchy */
+    --chalk-1: #eeeee8;       /* primary text */
+    --chalk-2: #b0b0a8;       /* secondary text */
+    --chalk-3: #7a7a72;       /* tertiary / metadata */
+    --chalk-4: #55554f;       /* muted / disabled */
+
+    /* Borders — separation hierarchy */
+    --seam-1: rgba(238, 238, 232, 0.06);  /* standard separation */
+    --seam-2: rgba(238, 238, 232, 0.10);  /* emphasis separation */
+    --seam-3: rgba(238, 238, 232, 0.16);  /* strong — focus rings, active */
+
+    /* Accent — safety orange (the field worker's universal "attention" color) */
+    --viz: #e8733a;           /* primary accent */
+    --viz-soft: rgba(232, 115, 58, 0.12); /* accent background tint */
+    --viz-hover: #d4632e;     /* accent hover */
+
+    /* Semantic — desaturated to match industrial feel */
+    --go: #5a9a6a;            /* success — muted green */
+    --go-soft: rgba(90, 154, 106, 0.12);
+    --halt: #c05050;          /* destructive — muted red */
+    --halt-soft: rgba(192, 80, 80, 0.12);
+    --flag: #c4943a;          /* warning — muted amber */
+    --flag-soft: rgba(196, 148, 58, 0.12);
+    --zone: #5080b0;          /* info / geofence — slate blue */
+    --zone-soft: rgba(80, 128, 176, 0.12);
+
+    /* Control tokens — inputs, buttons */
+    --pit: #191917;           /* input background — inset feel */
+    --pit-border: rgba(238, 238, 232, 0.08);
+    --pit-focus: rgba(232, 115, 58, 0.4);  /* focus ring uses accent */
+
+    /* Spacing base: 4px */
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-5: 20px;
+    --sp-6: 24px;
+    --sp-8: 32px;
+    --sp-10: 40px;
+    --sp-12: 48px;
+    --sp-16: 64px;
+
+    /* Border radius — sharp/technical */
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --radius-full: 9999px;
+
+    /* Transitions */
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --duration: 150ms;
+}
+
+/* === Base === */
+html {
+    background: var(--slab-1);
+    color: var(--chalk-1);
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+}
+
+/* === Scrollbar — minimal === */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--chalk-4); border-radius: var(--radius-full); }
+::-webkit-scrollbar-thumb:hover { background: var(--chalk-3); }
+
+/* === Focus — accent ring === */
+*:focus-visible {
+    outline: 2px solid var(--pit-focus);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+/* === Selection === */
+::selection {
+    background: var(--viz-soft);
+    color: var(--chalk-1);
 }
