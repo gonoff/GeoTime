@@ -22,7 +22,7 @@
 
             <div class="form-group">
               <label class="form-label">Workweek Start Day</label>
-              <input type="text" class="form-input" :value="capitalize(settings.workweek_start_day)" disabled />
+              <input type="text" class="form-input" :value="dayName(settings.workweek_start_day)" disabled />
             </div>
 
             <div class="form-group">
@@ -74,9 +74,16 @@ const settings = computed(() => page.props.settings ?? {
   clock_verification_mode: 'none',
 });
 
-function capitalize(str) {
-  if (!str) return '—';
+const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+function capitalize(val) {
+  if (val === null || val === undefined) return '—';
+  const str = String(val);
   return str.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function dayName(day) {
+  return dayNames[day] ?? '—';
 }
 </script>
 
