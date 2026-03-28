@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\TeamController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/stripe/webhook', [\App\Http\Controllers\Billing\WebhookController::class, 'handleWebhook']);
@@ -19,6 +20,9 @@ Route::prefix('v1')->group(function () {
 
         // Employees
         Route::apiResource('employees', EmployeeController::class);
+
+        // Teams
+        Route::apiResource('teams', TeamController::class);
 
         // Billing
         Route::prefix('billing')->group(function () {
