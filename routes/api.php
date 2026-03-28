@@ -9,6 +9,7 @@ use App\Http\Controllers\JobController;
 use App\Http\Controllers\GeofenceController;
 use App\Http\Controllers\TimeEntryController;
 use App\Http\Controllers\BreakEntryController;
+use App\Http\Controllers\TimesheetController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/stripe/webhook', [\App\Http\Controllers\Billing\WebhookController::class, 'handleWebhook']);
@@ -51,6 +52,14 @@ Route::prefix('v1')->group(function () {
         // Breaks
         Route::post('breaks', [BreakEntryController::class, 'store']);
         Route::post('breaks/{breakEntry}/end', [BreakEntryController::class, 'end']);
+
+        // Timesheets
+        Route::prefix('timesheets')->group(function () {
+            Route::post('/submit', [TimesheetController::class, 'submit']);
+            Route::post('/review', [TimesheetController::class, 'review']);
+            Route::post('/process-payroll', [TimesheetController::class, 'processPayroll']);
+            Route::get('/summary', [TimesheetController::class, 'summary']);
+        });
 
         // Billing
         Route::prefix('billing')->group(function () {
