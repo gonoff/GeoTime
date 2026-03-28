@@ -11,7 +11,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->appendToGroup('web', \App\Http\Middleware\ResolveTenant::class);
+        $middleware->appendToGroup('api', \App\Http\Middleware\ResolveTenant::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
