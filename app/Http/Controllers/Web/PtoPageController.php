@@ -28,8 +28,9 @@ class PtoPageController extends Controller
                 'notes' => $pto->notes,
             ]);
 
-        $employees = Employee::orderBy('full_name')
-            ->get(['id', 'full_name']);
+        $employees = Employee::orderBy('first_name')
+            ->get(['id', 'first_name', 'last_name'])
+            ->map(fn ($e) => ['id' => $e->id, 'full_name' => $e->full_name]);
 
         return Inertia::render('Pto/Index', [
             'requests' => $requests,
