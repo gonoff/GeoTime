@@ -98,12 +98,14 @@
         <slot />
       </main>
     </div>
+    <Toast />
   </div>
 </template>
 
 <script setup>
 import { computed, ref } from 'vue';
 import { usePage, router } from '@inertiajs/vue3';
+import Toast from '@/Components/Toast.vue';
 import {
   LayoutDashboard,
   Users,
