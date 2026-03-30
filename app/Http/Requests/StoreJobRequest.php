@@ -8,7 +8,7 @@ class StoreJobRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->isAdmin() || $this->user()->isManager();
+        return in_array($this->user()->role, ['admin', 'super_admin', 'manager', 'team_lead']);
     }
 
     public function rules(): array
