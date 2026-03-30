@@ -88,7 +88,7 @@ class DatabaseSeeder extends Seeder
             $emp = Employee::create(array_merge($ed, [
                 'tenant_id' => $tenant->id,
                 'current_team_id' => $teams[$teamIndex]->id,
-                'role' => 'field_worker',
+                'role' => 'EMPLOYEE',
                 'status' => 'ACTIVE',
             ]));
             $employees[] = $emp;
