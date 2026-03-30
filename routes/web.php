@@ -51,6 +51,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/employees/{employee}', [EmployeePageController::class, 'show'])->name('employees.show');
 
     Route::get('/teams', [TeamPageController::class, 'index'])->name('teams.index');
+    Route::post('/teams', [TeamPageController::class, 'store'])->name('teams.store');
+    Route::put('/teams/{team}', [TeamPageController::class, 'update'])->name('teams.update');
+    Route::post('/teams/{team}/archive', [TeamPageController::class, 'archive'])->name('teams.archive');
+    Route::delete('/teams/{team}', [TeamPageController::class, 'destroy'])->name('teams.destroy');
 });
 
 // Platform Admin
