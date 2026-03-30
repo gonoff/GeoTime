@@ -22,11 +22,8 @@ class JobPageController extends Controller
         $jobs = $query->get()->map(fn (Job $job) => [
             'id' => $job->id,
             'name' => $job->name,
-            'client_name' => $job->client_name,
             'address' => $job->address,
             'status' => $job->status,
-            'budget_hours' => $job->budget_hours,
-            'hourly_rate' => $job->hourly_rate,
             'start_date' => $job->start_date?->format('Y-m-d'),
             'end_date' => $job->end_date?->format('Y-m-d'),
             'geofences_count' => $job->geofences_count,

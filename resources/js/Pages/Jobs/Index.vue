@@ -33,26 +33,22 @@
           <thead>
             <tr>
               <th>Name</th>
-              <th>Client</th>
+              <th>Address</th>
               <th>Status</th>
-              <th class="col-right">Budget Hours</th>
-              <th class="col-right">Hourly Rate</th>
               <th class="col-right">Geofences</th>
               <th v-if="canManage" class="col-actions"></th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="jobs.length === 0">
-              <td :colspan="canManage ? 7 : 6" class="empty-cell">No job sites found</td>
+              <td :colspan="canManage ? 5 : 4" class="empty-cell">No job sites found</td>
             </tr>
             <tr v-for="job in jobs" :key="job.id">
               <td class="cell-primary">{{ job.name }}</td>
-              <td>{{ job.client_name ?? '—' }}</td>
+              <td>{{ job.address ?? '—' }}</td>
               <td>
                 <span class="badge" :class="statusClass(job.status)">{{ statusLabel(job.status) }}</span>
               </td>
-              <td class="col-right tabular">{{ job.budget_hours ?? '—' }}</td>
-              <td class="col-right tabular">{{ job.hourly_rate ? '$' + Number(job.hourly_rate).toFixed(2) : '—' }}</td>
               <td class="col-right tabular">{{ job.geofences_count }}</td>
               <td v-if="canManage" class="col-actions">
                 <div class="row-actions">
@@ -98,12 +94,6 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label" for="job-client">Client Name</label>
-        <input id="job-client" class="form-input" type="text" v-model="form.client_name" />
-        <span v-if="form.errors.client_name" class="form-error">{{ form.errors.client_name }}</span>
-      </div>
-
-      <div class="form-group">
         <label class="form-label" for="job-address">Address</label>
         <input id="job-address" class="form-input" type="text" v-model="form.address" />
         <span v-if="form.errors.address" class="form-error">{{ form.errors.address }}</span>
@@ -116,19 +106,6 @@
           <option value="ON_HOLD">On Hold</option>
         </select>
         <span v-if="form.errors.status" class="form-error">{{ form.errors.status }}</span>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label" for="job-budget">Budget Hours</label>
-          <input id="job-budget" class="form-input" type="number" v-model.number="form.budget_hours" min="0" step="0.5" />
-          <span v-if="form.errors.budget_hours" class="form-error">{{ form.errors.budget_hours }}</span>
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="job-rate">Hourly Rate ($)</label>
-          <input id="job-rate" class="form-input" type="number" v-model.number="form.hourly_rate" min="0" step="0.01" />
-          <span v-if="form.errors.hourly_rate" class="form-error">{{ form.errors.hourly_rate }}</span>
-        </div>
       </div>
 
       <div class="form-row">
@@ -191,11 +168,8 @@ const editingJob = ref(null);
 
 const form = useForm({
   name: '',
-  client_name: '',
   address: '',
   status: 'ACTIVE',
-  budget_hours: null,
-  hourly_rate: null,
   start_date: '',
   end_date: '',
 });
@@ -210,11 +184,8 @@ function openCreate() {
 function openEdit(job) {
   editingJob.value = job;
   form.name = job.name;
-  form.client_name = job.client_name ?? '';
   form.address = job.address ?? '';
   form.status = job.status;
-  form.budget_hours = job.budget_hours ?? null;
-  form.hourly_rate = job.hourly_rate ?? null;
   form.start_date = job.start_date ?? '';
   form.end_date = job.end_date ?? '';
   showForm.value = true;
