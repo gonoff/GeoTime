@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreEmployeeRequest;
+use App\Http\Requests\UpdateEmployeeRequest;
 use App\Models\Employee;
+use App\Models\Team;
 use App\Models\TimeEntry;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -45,13 +48,61 @@ class EmployeePageController extends Controller
                 'team_name' => $employee->currentTeam?->name,
             ]);
 
+        $teams = Team::where('status', 'ACTIVE')
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
         return Inertia::render('Employees/Index', [
             'employees' => $employees,
+            'teams' => $teams,
             'filters' => [
                 'search' => $request->input('search', ''),
                 'status' => $request->input('status', ''),
             ],
         ]);
+    }
+
+    public function store(StoreEmployeeRequest $request)
+    {
+        $data = $request->validated();
+        if (isset($data['current_team_id'])) {
+            // Will be set separately
+        }
+        $employee = Employee::create($data);
+
+        return back()->with('success', 'Employee created successfully.');
+    }
+
+    public function update(UpdateEmployeeRequest $request, Employee $employee)
+    {
+        $employee->update($request->validated());
+
+        return back()->with('success', 'Employee updated successfully.');
+    }
+
+    public function terminate(Request $request, Employee $employee)
+    {
+        if (!in_array($request->user()->role, ['admin', 'super_admin', 'manager'])) {
+            abort(403);
+        }
+
+        $employee->update([
+            'status' => 'TERMINATED',
+            'terminated_at' => now(),
+        ]);
+
+        return back()->with('success', 'Employee terminated.');
+    }
+
+    public function destroy(Request $request, Employee $employee)
+    {
+        if (!$request->user()->isAdmin()) {
+            abort(403);
+        }
+
+        $employee->delete();
+
+        return redirect('/employees')->with('success', 'Employee deleted.');
     }
 
     public function show(Employee $employee)
@@ -72,7 +123,12 @@ class EmployeePageController extends Controller
                 'job_name' => $entry->job?->name,
             ]);
 
+        $teams = Team::where('status', 'ACTIVE')
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
         return Inertia::render('Employees/Show', [
+            'teams' => $teams,
             'employee' => [
                 'id' => $employee->id,
                 'first_name' => $employee->first_name,
@@ -84,7 +140,9 @@ class EmployeePageController extends Controller
                 'hourly_rate' => $employee->hourly_rate,
                 'status' => $employee->status,
                 'hire_date' => $employee->hire_date?->format('M d, Y'),
+                'hire_date_raw' => $employee->hire_date?->format('Y-m-d'),
                 'date_of_birth' => $employee->date_of_birth?->format('M d, Y'),
+                'date_of_birth_raw' => $employee->date_of_birth?->format('Y-m-d'),
                 'address' => $employee->address,
                 'team' => $employee->currentTeam ? [
                     'id' => $employee->currentTeam->id,

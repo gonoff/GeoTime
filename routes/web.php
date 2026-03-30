@@ -65,7 +65,11 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/timesheets/bulk-reject', [TimesheetPageController::class, 'bulkReject'])->name('timesheets.bulk-reject');
 
     Route::get('/employees', [EmployeePageController::class, 'index'])->name('employees.index');
+    Route::post('/employees', [EmployeePageController::class, 'store'])->name('employees.store');
     Route::get('/employees/{employee}', [EmployeePageController::class, 'show'])->name('employees.show');
+    Route::put('/employees/{employee}', [EmployeePageController::class, 'update'])->name('employees.update');
+    Route::post('/employees/{employee}/terminate', [EmployeePageController::class, 'terminate'])->name('employees.terminate');
+    Route::delete('/employees/{employee}', [EmployeePageController::class, 'destroy'])->name('employees.destroy');
 
     Route::get('/teams', [TeamPageController::class, 'index'])->name('teams.index');
     Route::post('/teams', [TeamPageController::class, 'store'])->name('teams.store');

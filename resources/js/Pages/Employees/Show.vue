@@ -15,7 +15,12 @@
       <div class="panel">
         <div class="panel-header">
           <h2 class="panel-title">Employee Details</h2>
-          <span class="badge" :class="badgeClass(employee.status)">{{ employee.status }}</span>
+          <div class="panel-header-actions">
+            <span class="badge" :class="badgeClass(employee.status)">{{ employee.status }}</span>
+            <button v-if="canManage" class="icon-btn" title="Edit" @click="openEdit">
+              <Pencil :size="14" />
+            </button>
+          </div>
         </div>
         <div class="panel-body">
           <div class="profile-header">
@@ -83,6 +88,115 @@
       </div>
     </div>
 
+    <!-- Actions -->
+    <div v-if="canManage && employee.status === 'ACTIVE'" class="action-bar">
+      <button class="btn btn--warning" @click="showTerminate = true">
+        Terminate Employee
+      </button>
+      <button v-if="isAdmin" class="btn btn--danger" @click="showDelete = true">
+        Delete Permanently
+      </button>
+    </div>
+
+    <!-- Edit Modal -->
+    <FormModal
+      :show="showForm"
+      title="Edit Employee"
+      :loading="form.processing"
+      @close="closeForm"
+      @submit="submitForm"
+    >
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">First Name *</label>
+          <input class="form-input" type="text" v-model="form.first_name" />
+          <span v-if="form.errors.first_name" class="form-error">{{ form.errors.first_name }}</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last Name *</label>
+          <input class="form-input" type="text" v-model="form.last_name" />
+          <span v-if="form.errors.last_name" class="form-error">{{ form.errors.last_name }}</span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Email *</label>
+          <input class="form-input" type="email" v-model="form.email" />
+          <span v-if="form.errors.email" class="form-error">{{ form.errors.email }}</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone</label>
+          <input class="form-input" type="text" v-model="form.phone" />
+          <span v-if="form.errors.phone" class="form-error">{{ form.errors.phone }}</span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Hourly Rate *</label>
+          <input class="form-input" type="number" v-model.number="form.hourly_rate" min="0" step="0.50" />
+          <span v-if="form.errors.hourly_rate" class="form-error">{{ form.errors.hourly_rate }}</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Hire Date *</label>
+          <input class="form-input" type="date" v-model="form.hire_date" />
+          <span v-if="form.errors.hire_date" class="form-error">{{ form.errors.hire_date }}</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Date of Birth</label>
+        <input class="form-input" type="date" v-model="form.date_of_birth" />
+      </div>
+
+      <fieldset class="form-fieldset">
+        <legend class="form-legend">Address</legend>
+        <div class="form-group">
+          <label class="form-label">Street</label>
+          <input class="form-input" type="text" v-model="form.address.street" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">City</label>
+            <input class="form-input" type="text" v-model="form.address.city" />
+          </div>
+          <div class="form-group" style="max-width: 80px;">
+            <label class="form-label">State</label>
+            <input class="form-input" type="text" v-model="form.address.state" maxlength="2" />
+          </div>
+          <div class="form-group" style="max-width: 100px;">
+            <label class="form-label">ZIP</label>
+            <input class="form-input" type="text" v-model="form.address.zip" maxlength="10" />
+          </div>
+        </div>
+      </fieldset>
+    </FormModal>
+
+    <!-- Terminate Dialog -->
+    <ConfirmDialog
+      :show="showTerminate"
+      title="Terminate Employee"
+      :message="`Terminate ${employee.full_name}? They will no longer be able to clock in.`"
+      confirmLabel="Terminate"
+      confirmColor="red"
+      :destructive="true"
+      @close="showTerminate = false"
+      @confirm="submitTerminate"
+    />
+
+    <!-- Delete Dialog -->
+    <ConfirmDialog
+      :show="showDelete"
+      title="Delete Employee"
+      :message="`Permanently delete ${employee.full_name}? This cannot be undone.`"
+      confirmLabel="Delete"
+      confirmColor="red"
+      :destructive="true"
+      @close="showDelete = false"
+      @confirm="submitDelete"
+    />
+
     <!-- Recent Time Entries -->
     <div class="panel" style="margin-top: var(--sp-4)">
       <div class="panel-header">
@@ -122,13 +236,73 @@
 </template>
 
 <script setup>
-import { usePage, router } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
+import { usePage, useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { ArrowLeft, Clock, UsersRound } from 'lucide-vue-next';
+import FormModal from '@/Components/FormModal.vue';
+import ConfirmDialog from '@/Components/ConfirmDialog.vue';
+import { ArrowLeft, Clock, UsersRound, Pencil } from 'lucide-vue-next';
 
 const page = usePage();
 const employee = page.props.employee;
+const teams = computed(() => page.props.teams ?? []);
 const recentTimeEntries = page.props.recentTimeEntries ?? [];
+
+const userRole = computed(() => page.props.auth?.user?.role);
+const isAdmin = computed(() => ['admin', 'super_admin'].includes(userRole.value));
+const canManage = computed(() => ['admin', 'super_admin', 'manager', 'team_lead'].includes(userRole.value));
+
+// Edit form
+const showForm = ref(false);
+const form = useForm({
+  first_name: '',
+  last_name: '',
+  email: '',
+  phone: '',
+  hourly_rate: null,
+  hire_date: '',
+  date_of_birth: '',
+  address: { street: '', city: '', state: '', zip: '' },
+});
+
+function openEdit() {
+  form.first_name = employee.first_name;
+  form.last_name = employee.last_name;
+  form.email = employee.email;
+  form.phone = employee.phone ?? '';
+  form.hourly_rate = employee.hourly_rate;
+  form.hire_date = employee.hire_date_raw ?? '';
+  form.date_of_birth = employee.date_of_birth_raw ?? '';
+  form.address = employee.address ?? { street: '', city: '', state: '', zip: '' };
+  showForm.value = true;
+}
+
+function closeForm() {
+  showForm.value = false;
+  form.clearErrors();
+}
+
+function submitForm() {
+  form.put('/employees/' + employee.id, {
+    onSuccess: () => closeForm(),
+  });
+}
+
+// Terminate
+const showTerminate = ref(false);
+function submitTerminate() {
+  router.post('/employees/' + employee.id + '/terminate', {}, {
+    onSuccess: () => { showTerminate.value = false; },
+  });
+}
+
+// Delete
+const showDelete = ref(false);
+function submitDelete() {
+  router.delete('/employees/' + employee.id, {
+    onSuccess: () => { showDelete.value = false; },
+  });
+}
 
 function badgeClass(status) {
   const map = {
@@ -395,6 +569,136 @@ function entryBadgeClass(status) {
 .badge--info {
   background: var(--zone-soft);
   color: var(--zone);
+}
+
+/* === Panel Header Actions === */
+.panel-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+/* === Action Bar === */
+.action-bar {
+  display: flex;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.15s;
+}
+
+.btn--warning {
+  background: var(--flag-soft);
+  color: var(--flag);
+  border: 1px solid var(--flag);
+}
+
+.btn--warning:hover {
+  background: var(--flag);
+  color: #fff;
+}
+
+.btn--danger {
+  background: var(--halt-soft);
+  color: var(--halt);
+  border: 1px solid var(--halt);
+}
+
+.btn--danger:hover {
+  background: var(--halt);
+  color: #fff;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: transparent;
+  color: var(--chalk-3);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.icon-btn:hover {
+  background: var(--slab-3);
+  color: var(--chalk-1);
+}
+
+/* === Form Styles === */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+}
+
+.form-row {
+  display: flex;
+  gap: var(--sp-4);
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.form-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--chalk-3);
+}
+
+.form-error {
+  font-size: 11px;
+  color: var(--halt);
+}
+
+.form-input,
+.form-select {
+  background: var(--pit);
+  border: 1px solid var(--pit-border);
+  border-radius: var(--radius-md);
+  color: var(--chalk-2);
+  font-size: 13px;
+  padding: var(--sp-2) var(--sp-3);
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-input:focus,
+.form-select:focus {
+  outline: none;
+  border-color: var(--viz);
+}
+
+.form-fieldset {
+  border: 1px solid var(--seam-1);
+  border-radius: var(--radius-md);
+  padding: var(--sp-4);
+  margin: 0 0 var(--sp-4) 0;
+}
+
+.form-legend {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--chalk-3);
+  padding: 0 var(--sp-2);
 }
 
 /* === Empty State === */
