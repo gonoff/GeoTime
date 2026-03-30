@@ -8,3 +8,4 @@ database/database.sqlite
 .phpunit.result.cache
 /public/build/
 /public/hot
+.superpowers/
