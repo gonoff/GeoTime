@@ -34,8 +34,20 @@ Route::post('/logout', [WebLoginController::class, 'destroy'])->name('logout')->
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/jobs', [JobPageController::class, 'index'])->name('jobs.index');
+    Route::post('/jobs', [JobPageController::class, 'store'])->name('jobs.store');
+    Route::put('/jobs/{job}', [JobPageController::class, 'update'])->name('jobs.update');
+    Route::post('/jobs/{job}/complete', [JobPageController::class, 'complete'])->name('jobs.complete');
+    Route::delete('/jobs/{job}', [JobPageController::class, 'destroy'])->name('jobs.destroy');
     Route::get('/geofences', [GeofencePageController::class, 'index'])->name('geofences.index');
+    Route::post('/geofences', [GeofencePageController::class, 'store'])->name('geofences.store');
+    Route::put('/geofences/{geofence}', [GeofencePageController::class, 'update'])->name('geofences.update');
+    Route::post('/geofences/{geofence}/deactivate', [GeofencePageController::class, 'deactivate'])->name('geofences.deactivate');
+    Route::post('/geofences/{geofence}/activate', [GeofencePageController::class, 'activate'])->name('geofences.activate');
+    Route::delete('/geofences/{geofence}', [GeofencePageController::class, 'destroy'])->name('geofences.destroy');
     Route::get('/transfers', [TransferPageController::class, 'index'])->name('transfers.index');
+    Route::post('/transfers', [TransferPageController::class, 'store'])->name('transfers.store');
+    Route::post('/transfers/{transfer}/approve', [TransferPageController::class, 'approve'])->name('transfers.approve');
+    Route::post('/transfers/{transfer}/reject', [TransferPageController::class, 'reject'])->name('transfers.reject');
     Route::get('/pto', [PtoPageController::class, 'index'])->name('pto.index');
     Route::post('/pto', [PtoPageController::class, 'store'])->name('pto.store');
     Route::get('/pto/balance/{employee}', [PtoPageController::class, 'balance'])->name('pto.balance');
@@ -46,6 +58,11 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/settings', [SettingsPageController::class, 'update'])->name('settings.update');
     Route::get('/time-entries', [TimeEntryPageController::class, 'index'])->name('time-entries.index');
     Route::get('/timesheets', [TimesheetPageController::class, 'index'])->name('timesheets.index');
+    Route::post('/timesheets/approve', [TimesheetPageController::class, 'approve'])->name('timesheets.approve');
+    Route::post('/timesheets/reject', [TimesheetPageController::class, 'reject'])->name('timesheets.reject');
+    Route::post('/timesheets/process-payroll', [TimesheetPageController::class, 'processPayroll'])->name('timesheets.process-payroll');
+    Route::post('/timesheets/bulk-approve', [TimesheetPageController::class, 'bulkApprove'])->name('timesheets.bulk-approve');
+    Route::post('/timesheets/bulk-reject', [TimesheetPageController::class, 'bulkReject'])->name('timesheets.bulk-reject');
 
     Route::get('/employees', [EmployeePageController::class, 'index'])->name('employees.index');
     Route::get('/employees/{employee}', [EmployeePageController::class, 'show'])->name('employees.show');

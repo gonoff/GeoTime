@@ -51,14 +51,14 @@ class TimesheetPageController extends Controller
 
             // Determine the dominant status for the week
             $statuses = $employeeEntries->pluck('status')->unique();
-            if ($statuses->contains('APPROVED')) {
+            if ($statuses->contains('PAYROLL_PROCESSED')) {
+                $status = 'PAYROLL_PROCESSED';
+            } elseif ($statuses->contains('APPROVED')) {
                 $status = 'APPROVED';
             } elseif ($statuses->contains('SUBMITTED')) {
                 $status = 'SUBMITTED';
             } elseif ($statuses->contains('REJECTED')) {
                 $status = 'REJECTED';
-            } elseif ($statuses->contains('PAYROLL_PROCESSED')) {
-                $status = 'PAYROLL_PROCESSED';
             } else {
                 $status = 'ACTIVE';
             }
@@ -78,5 +78,126 @@ class TimesheetPageController extends Controller
             'week_end' => $weekEnd->format('Y-m-d'),
             'week_label' => $weekStart->format('M j') . ' - ' . $weekEnd->format('M j'),
         ]);
+    }
+
+    public function approve(Request $request)
+    {
+        if (!in_array($request->user()->role, ['admin', 'super_admin', 'manager', 'team_lead'])) {
+            abort(403);
+        }
+
+        $request->validate([
+            'employee_id' => ['required', 'uuid', 'exists:employees,id'],
+            'week_start' => ['required', 'date'],
+        ]);
+
+        $weekStart = Carbon::parse($request->week_start)->startOfWeek(Carbon::MONDAY);
+        $weekEnd = $weekStart->copy()->addDays(6);
+
+        TimeEntry::where('employee_id', $request->employee_id)
+            ->whereDate('clock_in', '>=', $weekStart)
+            ->whereDate('clock_in', '<=', $weekEnd)
+            ->where('status', 'SUBMITTED')
+            ->update(['status' => 'APPROVED']);
+
+        return back()->with('success', 'Timesheet approved.');
+    }
+
+    public function reject(Request $request)
+    {
+        if (!in_array($request->user()->role, ['admin', 'super_admin', 'manager', 'team_lead'])) {
+            abort(403);
+        }
+
+        $request->validate([
+            'employee_id' => ['required', 'uuid', 'exists:employees,id'],
+            'week_start' => ['required', 'date'],
+        ]);
+
+        $weekStart = Carbon::parse($request->week_start)->startOfWeek(Carbon::MONDAY);
+        $weekEnd = $weekStart->copy()->addDays(6);
+
+        TimeEntry::where('employee_id', $request->employee_id)
+            ->whereDate('clock_in', '>=', $weekStart)
+            ->whereDate('clock_in', '<=', $weekEnd)
+            ->where('status', 'SUBMITTED')
+            ->update(['status' => 'REJECTED']);
+
+        return back()->with('success', 'Timesheet rejected.');
+    }
+
+    public function processPayroll(Request $request)
+    {
+        if (!$request->user()->isAdmin()) {
+            abort(403);
+        }
+
+        $request->validate([
+            'employee_id' => ['required', 'uuid', 'exists:employees,id'],
+            'week_start' => ['required', 'date'],
+        ]);
+
+        $weekStart = Carbon::parse($request->week_start)->startOfWeek(Carbon::MONDAY);
+        $weekEnd = $weekStart->copy()->addDays(6);
+
+        TimeEntry::where('employee_id', $request->employee_id)
+            ->whereDate('clock_in', '>=', $weekStart)
+            ->whereDate('clock_in', '<=', $weekEnd)
+            ->where('status', 'APPROVED')
+            ->update(['status' => 'PAYROLL_PROCESSED']);
+
+        return back()->with('success', 'Timesheet processed for payroll.');
+    }
+
+    public function bulkApprove(Request $request)
+    {
+        if (!in_array($request->user()->role, ['admin', 'super_admin', 'manager', 'team_lead'])) {
+            abort(403);
+        }
+
+        $request->validate([
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.employee_id' => ['required', 'uuid', 'exists:employees,id'],
+            'items.*.week_start' => ['required', 'date'],
+        ]);
+
+        foreach ($request->items as $item) {
+            $weekStart = Carbon::parse($item['week_start'])->startOfWeek(Carbon::MONDAY);
+            $weekEnd = $weekStart->copy()->addDays(6);
+
+            TimeEntry::where('employee_id', $item['employee_id'])
+                ->whereDate('clock_in', '>=', $weekStart)
+                ->whereDate('clock_in', '<=', $weekEnd)
+                ->where('status', 'SUBMITTED')
+                ->update(['status' => 'APPROVED']);
+        }
+
+        return back()->with('success', count($request->items) . ' timesheets approved.');
+    }
+
+    public function bulkReject(Request $request)
+    {
+        if (!in_array($request->user()->role, ['admin', 'super_admin', 'manager', 'team_lead'])) {
+            abort(403);
+        }
+
+        $request->validate([
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.employee_id' => ['required', 'uuid', 'exists:employees,id'],
+            'items.*.week_start' => ['required', 'date'],
+        ]);
+
+        foreach ($request->items as $item) {
+            $weekStart = Carbon::parse($item['week_start'])->startOfWeek(Carbon::MONDAY);
+            $weekEnd = $weekStart->copy()->addDays(6);
+
+            TimeEntry::where('employee_id', $item['employee_id'])
+                ->whereDate('clock_in', '>=', $weekStart)
+                ->whereDate('clock_in', '<=', $weekEnd)
+                ->where('status', 'SUBMITTED')
+                ->update(['status' => 'REJECTED']);
+        }
+
+        return back()->with('success', count($request->items) . ' timesheets rejected.');
     }
 }
