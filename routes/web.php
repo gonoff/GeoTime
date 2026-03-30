@@ -37,8 +37,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/geofences', [GeofencePageController::class, 'index'])->name('geofences.index');
     Route::get('/transfers', [TransferPageController::class, 'index'])->name('transfers.index');
     Route::get('/pto', [PtoPageController::class, 'index'])->name('pto.index');
+    Route::post('/pto', [PtoPageController::class, 'store'])->name('pto.store');
+    Route::get('/pto/balance/{employee}', [PtoPageController::class, 'balance'])->name('pto.balance');
+    Route::post('/pto/{ptoRequest}/approve', [PtoPageController::class, 'approve'])->name('pto.approve');
+    Route::post('/pto/{ptoRequest}/deny', [PtoPageController::class, 'deny'])->name('pto.deny');
     Route::get('/billing', [BillingPageController::class, 'index'])->name('billing.index');
     Route::get('/settings', [SettingsPageController::class, 'index'])->name('settings.index');
+    Route::put('/settings', [SettingsPageController::class, 'update'])->name('settings.update');
     Route::get('/time-entries', [TimeEntryPageController::class, 'index'])->name('time-entries.index');
     Route::get('/timesheets', [TimesheetPageController::class, 'index'])->name('timesheets.index');
 
