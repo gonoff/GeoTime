@@ -20,6 +20,8 @@ class Job extends Model
         'qbo_customer_id',
         'address',
         'status',
+        'lunch_duration_minutes',
+        'lunch_after_hours',
         'budget_hours',
         'hourly_rate',
         'start_date',

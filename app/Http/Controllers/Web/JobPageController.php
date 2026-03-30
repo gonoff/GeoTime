@@ -24,6 +24,8 @@ class JobPageController extends Controller
             'name' => $job->name,
             'address' => $job->address,
             'status' => $job->status,
+            'lunch_duration_minutes' => $job->lunch_duration_minutes,
+            'lunch_after_hours' => $job->lunch_after_hours,
             'start_date' => $job->start_date?->format('Y-m-d'),
             'end_date' => $job->end_date?->format('Y-m-d'),
             'geofences_count' => $job->geofences_count,

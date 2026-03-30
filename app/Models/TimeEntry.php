@@ -89,6 +89,20 @@ class TimeEntry extends Model
 
         $workedMinutes = max(0, $totalMinutes - $unpaidBreakMinutes);
 
+        // Auto-deduct lunch based on job site settings
+        if ($this->job) {
+            $job = $this->job;
+            $lunchDuration = $job->lunch_duration_minutes;
+            $lunchAfterHours = $job->lunch_after_hours;
+
+            if ($lunchDuration && $lunchAfterHours) {
+                $hoursWorked = $workedMinutes / 60;
+                if ($hoursWorked >= $lunchAfterHours) {
+                    $workedMinutes = max(0, $workedMinutes - $lunchDuration);
+                }
+            }
+        }
+
         return round($workedMinutes / 60, 2);
     }
 }

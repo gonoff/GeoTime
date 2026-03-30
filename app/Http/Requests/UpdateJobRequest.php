@@ -18,8 +18,8 @@ class UpdateJobRequest extends FormRequest
             'client_name' => ['nullable', 'string', 'max:255'],
             'address' => ['nullable', 'string'],
             'status' => ['sometimes', 'string', 'in:ACTIVE,COMPLETED,ON_HOLD'],
-            'budget_hours' => ['nullable', 'numeric', 'min:0'],
-            'hourly_rate' => ['nullable', 'numeric', 'min:0'],
+            'lunch_duration_minutes' => ['nullable', 'integer', 'min:0', 'max:120'],
+            'lunch_after_hours' => ['nullable', 'numeric', 'min:0', 'max:12'],
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date'],
         ];

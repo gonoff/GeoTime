@@ -35,13 +35,14 @@
               <th>Name</th>
               <th>Address</th>
               <th>Status</th>
+              <th>Lunch</th>
               <th class="col-right">Geofences</th>
               <th v-if="canManage" class="col-actions"></th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="jobs.length === 0">
-              <td :colspan="canManage ? 5 : 4" class="empty-cell">No job sites found</td>
+              <td :colspan="canManage ? 6 : 5" class="empty-cell">No job sites found</td>
             </tr>
             <tr v-for="job in jobs" :key="job.id">
               <td class="cell-primary">{{ job.name }}</td>
@@ -49,6 +50,7 @@
               <td>
                 <span class="badge" :class="statusClass(job.status)">{{ statusLabel(job.status) }}</span>
               </td>
+              <td class="text-secondary">{{ lunchLabel(job) }}</td>
               <td class="col-right tabular">{{ job.geofences_count }}</td>
               <td v-if="canManage" class="col-actions">
                 <div class="row-actions">
@@ -106,6 +108,19 @@
           <option value="ON_HOLD">On Hold</option>
         </select>
         <span v-if="form.errors.status" class="form-error">{{ form.errors.status }}</span>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="job-lunch-duration">Lunch Duration (min)</label>
+          <input id="job-lunch-duration" class="form-input" type="number" v-model.number="form.lunch_duration_minutes" min="0" max="120" step="5" placeholder="e.g. 30" />
+          <span v-if="form.errors.lunch_duration_minutes" class="form-error">{{ form.errors.lunch_duration_minutes }}</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="job-lunch-after">Auto-deduct after (hours)</label>
+          <input id="job-lunch-after" class="form-input" type="number" v-model.number="form.lunch_after_hours" min="0" max="12" step="0.5" placeholder="e.g. 6" />
+          <span v-if="form.errors.lunch_after_hours" class="form-error">{{ form.errors.lunch_after_hours }}</span>
+        </div>
       </div>
 
       <div class="form-row">
@@ -170,6 +185,8 @@ const form = useForm({
   name: '',
   address: '',
   status: 'ACTIVE',
+  lunch_duration_minutes: null,
+  lunch_after_hours: null,
   start_date: '',
   end_date: '',
 });
@@ -186,6 +203,8 @@ function openEdit(job) {
   form.name = job.name;
   form.address = job.address ?? '';
   form.status = job.status;
+  form.lunch_duration_minutes = job.lunch_duration_minutes ?? null;
+  form.lunch_after_hours = job.lunch_after_hours ?? null;
   form.start_date = job.start_date ?? '';
   form.end_date = job.end_date ?? '';
   showForm.value = true;
@@ -257,6 +276,13 @@ function statusClass(status) {
     case 'ON_HOLD': return 'badge--flag';
     default: return 'badge--muted';
   }
+}
+
+function lunchLabel(job) {
+  if (!job.lunch_duration_minutes) return '—';
+  let label = job.lunch_duration_minutes + 'min';
+  if (job.lunch_after_hours) label += ' after ' + job.lunch_after_hours + 'h';
+  return label;
 }
 
 function statusLabel(status) {

@@ -52,6 +52,13 @@
               <span class="field-value">{{ employee.status }}</span>
             </div>
           </div>
+
+          <div v-if="employee.address" class="address-section">
+            <span class="field-label">Address</span>
+            <span class="field-value">
+              {{ [employee.address.street, employee.address.city, employee.address.state, employee.address.zip].filter(Boolean).join(', ') || '--' }}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -280,6 +287,16 @@ function entryBadgeClass(status) {
 
 .field-value--mono {
   font-variant-numeric: tabular-nums;
+}
+
+/* === Address === */
+.address-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--seam-1);
 }
 
 /* === Team Assignment === */
