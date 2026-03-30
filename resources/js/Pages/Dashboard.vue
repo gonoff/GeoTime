@@ -34,13 +34,24 @@
         </div>
       </div>
 
-      <div class="stat-card">
+      <!-- 4th stat card: conditional on verification mode -->
+      <div class="stat-card" v-if="verificationMode === 'AUTO_PHOTO'">
         <div class="stat-ring stat-ring--unverified">
           <span class="stat-ring-value">{{ stats.unverifiedEntries }}</span>
         </div>
         <div class="stat-detail">
           <span class="stat-label">Unverified</span>
           <span class="stat-sublabel">missing photo verification</span>
+        </div>
+      </div>
+      <div class="stat-card stat-card--prompt" v-else>
+        <div class="stat-ring stat-ring--prompt">
+          <Settings :size="22" :stroke-width="1.5" />
+        </div>
+        <div class="stat-detail">
+          <span class="stat-label">Photo Verification</span>
+          <span class="stat-sublabel">Enable in Settings to require selfie verification</span>
+          <a href="/settings" class="stat-settings-link">Go to Settings</a>
         </div>
       </div>
     </div>
@@ -138,7 +149,7 @@
 import { computed } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Clock, Shield, AlertTriangle, AlertCircle, Info, UsersRound } from 'lucide-vue-next';
+import { Clock, Shield, AlertTriangle, AlertCircle, Info, UsersRound, Settings } from 'lucide-vue-next';
 
 const page = usePage();
 
@@ -154,6 +165,7 @@ const stats = computed(() => page.props.stats ?? {
 const activity = computed(() => page.props.activity ?? []);
 const alerts = computed(() => page.props.alerts ?? []);
 const teams = computed(() => page.props.teams ?? []);
+const verificationMode = computed(() => page.props.clock_verification_mode ?? 'AUTO_ONLY');
 
 function alertIcon(severity) {
   if (severity === 'critical') return AlertCircle;
@@ -211,6 +223,19 @@ function alertIcon(severity) {
 
 .stat-ring--unverified { border-color: var(--zone); }
 .stat-ring--unverified .stat-ring-value { color: var(--zone); }
+
+.stat-ring--prompt { border-color: var(--seam-2); color: var(--chalk-3); }
+
+.stat-settings-link {
+  font-size: 11px;
+  color: var(--viz);
+  text-decoration: none;
+  margin-top: 2px;
+}
+
+.stat-settings-link:hover {
+  text-decoration: underline;
+}
 
 .stat-detail {
   display: flex;

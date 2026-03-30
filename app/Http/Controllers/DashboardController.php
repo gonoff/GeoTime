@@ -24,7 +24,11 @@ class DashboardController extends Controller
 
         $overtimeAlerts = 0; // TODO: Calculate from weekly hours > 35
         $pendingApprovals = $tenant ? TimeEntry::where('status', 'SUBMITTED')->count() : 0;
-        $unverifiedEntries = $tenant ? TimeEntry::where('verification_status', 'UNVERIFIED')->count() : 0;
+
+        $clockVerificationMode = $tenant?->clock_verification_mode ?? 'AUTO_ONLY';
+        $unverifiedEntries = ($tenant && $clockVerificationMode === 'AUTO_PHOTO')
+            ? TimeEntry::where('verification_status', 'UNVERIFIED')->count()
+            : 0;
 
         // Recent activity (today's clock events)
         $activity = $tenant ? TimeEntry::with('employee')
@@ -55,8 +59,8 @@ class DashboardController extends Controller
                 ]);
             }
 
-            // Unverified entries
-            if ($unverifiedEntries > 0) {
+            // Unverified entries — only relevant when photo verification is required
+            if ($clockVerificationMode === 'AUTO_PHOTO' && $unverifiedEntries > 0) {
                 $alerts->push([
                     'id' => 'unverified',
                     'severity' => 'warning',
@@ -103,6 +107,7 @@ class DashboardController extends Controller
                 'pendingApprovals' => $pendingApprovals,
                 'unverifiedEntries' => $unverifiedEntries,
             ],
+            'clock_verification_mode' => $clockVerificationMode,
             'activity' => $activity,
             'alerts' => $alerts,
             'teams' => $teams,
